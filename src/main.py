@@ -43,6 +43,10 @@ def index():
     """Home page route"""
     return redirect(url_for('project.list_projects'))
 
+@app.context_processor
+def inject_now():
+    return {'now': datetime.utcnow()}
+
 # Create database tables
 with app.app_context():
     db.create_all()
