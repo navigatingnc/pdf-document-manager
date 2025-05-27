@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Documents | PDF Document Manager{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5">
+            <i class="fas fa-file-upload me-2"></i>Upload Documents
+        </h1>
+        <h5 class="text-muted">{{ project.project_name }}</h5>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('document.upload_documents', project_id=project.id) }}" enctype="multipart/form-data">
+                    {{ form.csrf_token }}
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label">Document Type</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="file_type" id="typePlan" value="plan" checked>
+                                    <label class="form-check-label" for="typePlan">
+                                        <i class="fas fa-drafting-compass me-1"></i>Plan
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="file_type" id="typeSpec" value="specification">
+                                    <label class="form-check-label" for="typeSpec">
+                                        <i class="fas fa-file-contract me-1"></i>Specification
+                                    </label>
+                                </div>
+                                {% if form.file_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.file_type.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="files" class="form-label">PDF Files</label>
+                                <div class="upload-container p-4 border rounded" id="dropZone">
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-primary"></i>
+                                        <h5>Drag & Drop PDF Files Here</h5>
+                                        <p class="text-muted">or</p>
+                                        {{ form.files(class="form-control", multiple=True, accept=".pdf") }}
+                                    </div>
+                                </div>
+                                <div id="fileList" class="mt-2"></div>
+                                {% if form.files.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.files.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Project
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // File input preview
+    const fileInput = document.querySelector('input[type="file"]');
+    const fileList = document.getElementById('fileList');
+    const dropZone = document.getElementById('dropZone');
+    
+    fileInput.addEventListener('change', updateFileList);
+    
+    function updateFileList() {
+        fileList.innerHTML = '';
+        
+        if (fileInput.files.length > 0) {
+            const list = document.createElement('ul');
+            list.className = 'list-group';
+            
+            Array.from(fileInput.files).forEach(file => {
+                const item = document.createElement('li');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                
+                const fileIcon = document.createElement('i');
+                fileIcon.className = 'fas fa-file-pdf text-danger me-2';
+                
+                const fileName = document.createTextNode(file.name);
+                
+                const fileSize = document.createElement('span');
+                fileSize.className = 'badge bg-primary rounded-pill';
+                fileSize.textContent = formatFileSize(file.size);
+                
+                item.appendChild(fileIcon);
+                item.appendChild(fileName);
+                item.appendChild(fileSize);
+                list.appendChild(item);
+            });
+            
+            fileList.appendChild(list);
+        }
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        dropZone.classList.add('border-primary');
+    }
+    
+    function unhighlight() {
+        dropZone.classList.remove('border-primary');
+    }
+    
+    dropZone.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        fileInput.files = files;
+        updateFileList();
+    }
+</script>
+{% endblock %}
